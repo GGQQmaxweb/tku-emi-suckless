@@ -5,6 +5,7 @@ import webview
 import os
 import json
 from functools import wraps
+import re
 
 from emis_api.emis_api import EMISStudentAPI
 from emis_api.emis_auth_module import Authenticator
@@ -230,24 +231,48 @@ class UI_Api:
                     "course_name": course.get("title", "").strip(),
                     "course_code": course.get("code", ""),
                     "credits": str(course.get("credits", "")),
-                    # 必 -> R (Required), 選 -> C (Elective)
-                    "required": (
-                        "R"
-                        if course.get("required") == "必"
-                        else "C"
-                        if course.get("required") == "選"
-                        else course.get("required", "")
-                    ),
                     "teachers": (
                         [course["teacher"]]
                         if course.get("teacher")
                         else []
                     ),
-                    "schedule": course.get("times", []),
+                    "schedule": normalize_schedule(course.get("times", [])),
                     "seat_numbers": [],  # Source data doesn't contain seat information.
                 }
 
         return None
+    
+    def search_courses(self, options):
+
+        title = options.get("title", "").lower()
+        times = options.get("times", "").replace(" ", "")
+        required = options.get("required", "")
+        dept = options.get("dept_block", "").lower()
+
+        result = []
+
+        for course in self.courses:
+
+            if title:
+                if title not in course["title"].lower():
+                    continue
+
+            if required:
+                if course["required"] != required:
+                    continue
+
+            if dept:
+                if dept not in course["dept_block"].lower():
+                    continue
+
+            if times:
+                course_time = "".join(course["times"]).replace(" ", "")
+                if times not in course_time:
+                    continue
+
+            result.append(course)
+
+        return result
 
     def auth_login(self):
         global AUTH, API
@@ -302,6 +327,24 @@ class UI_Api:
         if os.path.exists(SESSION_FILE):
             os.remove(SESSION_FILE)
         return True
+
+def normalize_schedule(schedule):
+    normalized = []
+
+    for item in schedule:
+        # Convert single digit class periods to 2 digits
+        item = re.sub(
+            r'(?<=/ )(\d)(?=,| /)',
+            lambda m: f"0{m.group(1)}",
+            item
+        )
+
+        # Normalize spaces before room number
+        item = re.sub(r'([A-Z])\s+(\d+)', r'\1  \2', item)
+
+        normalized.append(item)
+
+    return normalized
 
 def notify_user_and_exit(title, message, win_url=None):
     os_type = platform.system()

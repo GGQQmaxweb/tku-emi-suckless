@@ -17,6 +17,7 @@ window.addEventListener('pywebviewready', async () => {
         await getDashboardData();
         await updateProgressBar();
         await userInformation();
+        loadCourses();
     } else {
         // No saved session -> Show Login page
         showPage('page-login');
@@ -120,6 +121,7 @@ async function userInformation() {
     `;
 
 }
+
 async function updateAllGrades(withoutRefresh = false) {
     const data = await window.pywebview.api.all_years_course_grades(withoutRefresh);
 
@@ -297,6 +299,7 @@ function renderScheduleMyClass(schedule, days, periods) {
                             <strong>${cls.name}</strong>
                             <small>${cls.teacher}</small>
                             <small>${cls.room}</small>
+                            <button onclick="updateScheduleMyClass({'options':'remove','course_id':'${cls.course_id}'})" class="small">remove</button>
                         </div>
                     `;
                 }
@@ -377,6 +380,153 @@ async function updateScheduleMyClass(options) {
     // Always render, even when schedule is empty
     renderScheduleMyClass(schedule, days, periods);
     document.getElementById("load-my-class-section-btn").innerText="Load My Class"
+}
+
+async function updateCourses() {
+    await window.api.courses_we_have_this_semester(true)
+}
+
+let courses = [];
+
+// Load your large json once
+async function loadCourses() {
+    courses = await window.pywebview.api.courses_we_have_this_semester()
+}
+
+function normalize(text) {
+    return String(text || "")
+        .toLowerCase()
+        .replace(/\s+/g, "");
+}
+
+async function searchCourses(options = {}) {
+    const {
+        title = "",
+        times = "",
+        required = "",
+        dept_block = ""
+    } = options;
+
+    const titleQuery = normalize(title);
+    const timeQuery = normalize(times);
+    const deptQuery = normalize(dept_block);
+    const requiredQuery = required.trim();
+
+    return courses.filter(course => {
+
+        // title search
+        if (
+            titleQuery &&
+            !normalize(course.title).includes(titleQuery)
+        ) {
+            return false;
+        }
+
+        // required search (必 / 選)
+        if (
+            requiredQuery &&
+            course.required !== requiredQuery
+        ) {
+            return false;
+        }
+
+        // department search
+        if (
+            deptQuery &&
+            !normalize(course.dept_block).includes(deptQuery)
+        ) {
+            return false;
+        }
+
+        // time search
+        if (timeQuery) {
+            const searchTimes = timeQuery
+                .split(/[,\s]+/) // split by comma OR spaces
+                .map(t => t.trim())
+                .filter(Boolean);
+
+            const courseTimes = normalize(course.times.join(" "));
+
+            if (!searchTimes.every(t => courseTimes.includes(normalize(t)))) {
+                return false;
+            }
+        }
+
+        return true;
+    });
+}
+
+async function runSearch(options = {}) {
+
+    const results = await searchCourses(options);
+
+    const container = document.getElementById("search-result");
+
+    if (!container) {
+        console.error("search-result not found");
+        return;
+    }
+
+    if (results.length === 0) {
+        container.innerHTML = `
+            <p>No courses found.</p>
+        `;
+        return;
+    }
+
+
+    container.innerHTML = `
+        <h3>${results.length} courses found</h3>
+
+        ${results.map(course => `
+            <div class="course-card">
+
+                <h3>
+                    ${course.title}
+                </h3>
+
+                <p>
+                    Code: ${course.code}
+                </p>
+
+                <button onclick="updateScheduleMyClass({'options':'add','course_id':'${course.code}'})" class="small">+</button>
+                
+                <p>
+                    ${course.required}
+                    |
+                    ${course.credits} credits
+                </p>
+
+                <p>
+                    Department:
+                    ${course.dept_block}
+                </p>
+
+                <p>
+                    Teacher:
+                    ${course.teacher}
+                </p>
+
+                <p>
+                    Time:
+                    ${course.times.join(", ")}
+                </p>
+
+            </div>
+        `).join("")}
+    `;
+
+}
+
+async function searchButtonClick(){
+
+    runSearch({
+        title: document.getElementById("search-title").value,
+        times: document.getElementById("search-time").value,
+        required: document.getElementById("search-required").value,
+        dept_block: document.getElementById("search-dept").value
+    });
+
 }
 
 
