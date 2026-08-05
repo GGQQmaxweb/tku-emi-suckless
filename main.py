@@ -248,6 +248,9 @@ def get_storage_data(fileName:str):
     return data
 
 def save_storage_data(fileName:str,data):
+    if not os.path.exists(".userData"):
+        os.mkdir(".userData")
+    
     with open(".userData/"+fileName, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
             
