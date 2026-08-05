@@ -324,6 +324,9 @@ function renderScheduleMyClass(schedule, days, periods) {
 async function searchClassTimeClick(time) {
     const searchTime = `${time.day},${Number(time.period)}`    
     document.getElementById('search-time').value = searchTime
+    runSearch({
+        times: searchTime,
+    });
     showPage('find-class')
 }
 
@@ -451,9 +454,9 @@ async function searchCourses(options = {}) {
                 .map(t => t.trim())
                 .filter(Boolean);
 
-            const courseTimes = normalize(course.times.join(" "));
+            const courseTokens = parseTimeTokens(course.times);
 
-            if (!searchTimes.every(t => courseTimes.includes(normalize(t)))) {
+            if (!searchTimes.every(t => courseTokens.includes(normalize(t)))) {
                 return false;
             }
         }
@@ -492,10 +495,10 @@ async function runSearch(options = {}) {
                 </h3>
 
                 <p>
-                    Code: ${course.code}
+                    Code: ${course.seq}
                 </p>
 
-                <button onclick="updateScheduleMyClass({'options':'add','course_id':'${course.code}'})" class="small">+</button>
+                <button onclick="updateScheduleMyClass({'options':'add','course_id':'${course.seq}'})" class="small">+</button>
                 
                 <p>
                     ${course.required}
@@ -535,6 +538,22 @@ async function searchButtonClick(){
 
 }
 
+function parseTimeTokens(times) {
+    const tokens = [];
+
+    for (const t of times) {
+        const [day, periods] = t.split("/").map(s => s.trim());
+
+        tokens.push(normalize(day));
+
+        periods
+            .split(",")
+            .map(p => p.trim())
+            .forEach(p => tokens.push(normalize(p)));
+    }
+
+    return tokens;
+}
 
 
 // Login Handler

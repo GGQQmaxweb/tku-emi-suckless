@@ -219,7 +219,7 @@ class UI_Api:
         data = get_storage_data("courses.json")
 
         for course in data:
-            if course.get("code") == course_code:
+            if course.get("seq") == course_code:
                 return {
                     "course_id": course.get("seq", ""),
                     "dept": (
@@ -229,7 +229,7 @@ class UI_Api:
                     ),
                     "grade": course.get("grade", ""),
                     "course_name": course.get("title", "").strip(),
-                    "course_code": course.get("code", ""),
+                    "course_code": course.get("seq", ""),
                     "credits": str(course.get("credits", "")),
                     "teachers": (
                         [course["teacher"]]
@@ -328,19 +328,23 @@ class UI_Api:
             os.remove(SESSION_FILE)
         return True
 
+
 def normalize_schedule(schedule):
     normalized = []
 
     for item in schedule:
-        # Convert single digit class periods to 2 digits
-        item = re.sub(
-            r'(?<=/ )(\d)(?=,| /)',
-            lambda m: f"0{m.group(1)}",
-            item
-        )
+        parts = [p.strip() for p in item.split("/")]
 
-        # Normalize spaces before room number
-        item = re.sub(r'([A-Z])\s+(\d+)', r'\1  \2', item)
+        if len(parts) >= 3:
+            day, periods, room = parts[:3]
+
+            # Pad every period to 2 digits
+            periods = ",".join(f"{int(p):02d}" for p in periods.split(","))
+
+            # Normalize room spacing
+            room = re.sub(r"([A-Z])\s+(\d+)", r"\1  \2", room)
+
+            item = f"{day} / {periods} / {room}"
 
         normalized.append(item)
 
