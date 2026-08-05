@@ -27,6 +27,9 @@ window.addEventListener('pywebviewready', async () => {
 async function updateUserLocalData() {
     document.getElementById('UpdataUserdataBtn').innerText = "Updating data, please wait...";
     await window.pywebview.api.update_all_user_data();
+    await getDashboardData();
+    await updateProgressBar();
+    await userInformation();
     document.getElementById('UpdataUserdataBtn').innerText = "Update User Data";
 }
 
