@@ -50,9 +50,10 @@ class EMISStudentAPI:
                 raise RuntimeError("Not login")
 
         except:
-                pass
 
-    def whatClassWeHaveThisSemester(self):
+            pass
+
+    def get_courses_we_have_this_semester(self):
         url = "https://raw.githubusercontent.com/tkuitocc/azquerysucks/main/courses.json"
         try:
             response = self.session.get(url)
@@ -166,14 +167,7 @@ class EMISStudentAPI:
         return " ".join(el.stripped_strings)
 
     def get_student_info(self):
-        return {"id":self.student_id,"grade":self.student_grade,"name":self.student_name,"department_":self.student_department,"year_":self.student_year,"class_":self.student_class_}
-
-    # 查詢學生基本資料
-    def get_student_basic_info(self):
-        url = "https://sso.tku.edu.tw/aissinfo/emis/TMWS020.aspx"
-        #too detail don't use it
-        raise Exception("Do not support: Too detail don't use it on api")
-        pass
+        return {"id":self.student_id,"grade":self.student_grade,"name":self.student_name,"department":self.student_department,"year":self.student_year,"class":self.student_class_}
 
     # 查詢修業相關資訊
     def get_study_progress_info(self):

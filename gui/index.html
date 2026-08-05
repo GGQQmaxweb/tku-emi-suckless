@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>My Desktop App</title>
-    <link rel="stylesheet" href="pico.min.css">
+    <link rel="stylesheet" href="css/styles.css">
     <style>
         .page { display: none; }
         .page.active { display: block; }
@@ -29,9 +29,43 @@
     <!-- MAIN DASHBOARD -->
     <section id="page-dashboard" class="page">
         <h2>Welcome back, <span id="user-display"></span>!</h2>
-        <p>You stayed logged in across app restarts.</p>
+        <div id="user-info">
+        </div>
+        <div>
+            <button onclick="showPage('required-courses'),updateRequiredCourses()">View Required Courses</button>
+            <button onclick="showPage('all-grades'),updateAllGrades()">View All Grades</button>
+        </div>
+        
+            <div class="progress-container">
+            <div id="progress-bar" class="progress-bar">0%</div>
+        </div>
+        <div id="dashboard-content">
+            <p>Loading your data...</p>
+        </div>
         <button onclick="handleLogout()" class="secondary">Logout</button>
+        <button id="UpdataUserdataBtn" onclick="updateUserLocalData()" class="primary">Update Data</button>
     </section>
+
+    <!-- REQUIRED COURSES SECTION -->
+    <section id="required-courses" class="page">
+        <button onclick="showPage('page-dashboard')" class="secondary">Back to Dashboard</button>
+        <h2>Required Courses</h2>
+        <div id="required-courses-content">
+            <p>Loading required courses...</p>
+        </div>
+        <button id="update-required-courses-btn" onclick="updateRequiredCourses(true),document.getElementById('update-required-courses-btn').innerHTML = '<p>Loading required courses...</p>'" class="primary">Update Required Courses</button>
+    </section>
+
+    <section id="all-grades" class="page">
+        <button onclick="showPage('page-dashboard')" class="secondary">Back to Dashboard</button>
+        <h2>All Grades</h2>
+        <div id="all-grades-content">
+            <p>Loading all grades...</p>
+        </div>
+        <button id="update-all-grades-btn" onclick="updateAllGrades(true),document.getElementById('update-all-grades-btn').innerHTML = '<p>Loading all grades...</p>'" class="primary">Update All Grades</button>
+    </section>
+
+
 
     <script src="script.js"></script>
 </body>
