@@ -33,6 +33,14 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
 
+      # 2.1 Install Linux system dependencies early so packages like pycairo can build
+      - name: Install Linux System Dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgirepository1.0-dev gcc libcairo2-dev pkg-config python3-dev gir1.2-webkit2-4.0
+        shell: bash
+
       # 3. Install dependencies
       - name: Install Python Dependencies
         run: |
@@ -60,11 +68,6 @@ jobs:
       # -------------------------------------------------------------
       # LINUX BUILD (AppImage)
       # -------------------------------------------------------------
-      - name: Install Linux System Dependencies
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libgirepository1.0-dev gcc libcairo2-dev pkg-config python3-dev gir1.2-webkit2-4.0
 
       - name: Build Linux PyInstaller & AppImage
         if: matrix.os == 'ubuntu-latest'
