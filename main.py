@@ -389,7 +389,7 @@ if __name__ == '__main__':
     api = UI_Api()
     webview.create_window('TKU EMI Suckless', 'gui/index.html', js_api=api)
     try:
-        webview.start(debug=True)
+        webview.start()
     except Exception as e:
         if platform.system() == "Linux":
             notify_user_and_exit(
