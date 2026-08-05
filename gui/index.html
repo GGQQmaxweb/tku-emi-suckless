@@ -69,10 +69,24 @@
     <section id="my-class-section" class="page">
         <button onclick="showPage('page-dashboard')" class="secondary">Back to Dashboard</button>
         <h2>My Class</h2>
+        <button onclick="showPage('schedule-my-class'),updateScheduleMyClass()" class="primary">Schedule My Class</button>
         <div id="my-class-content">
             <p>Loading my class...</p>
         </div>
         <button id="update-my-class-btn" onclick="updateMyClass(true),document.getElementById('update-my-class-btn').innerHTML = '<p>Loading my class...</p>'" class="primary">Update My Class</button>
+    </section>
+
+    <section id="schedule-my-class" class="page">
+        <button onclick="showPage('my-class-section')" class="secondary">Back to My Class</button>
+        <h2>Schedule My Class</h2>
+        <div>
+            <button id="load-my-class-section-btn" onclick="updateScheduleMyClass({options:'load'}),document.getElementById('load-my-class-section-btn').innerHTML = '<p>Loading schedule my class...</p>'" class="primary">Load My Class</button>
+            <button id="clear-my-class-section-btn" onclick="updateScheduleMyClass({options:'clear'})">Clear My Class</button>
+        </div>
+        <div id="schedule-my-class-content">
+            <p>Loading schedule my class...</p>
+        </div>
+        
     </section>
 
 

@@ -267,6 +267,120 @@ function renderMyClass(schedule, days, periods) {
     container.innerHTML = html;
 }
 
+function renderScheduleMyClass(schedule, days, periods) {
+    const container = document.getElementById("schedule-my-class-content");
+
+    let html = `
+        <table class="my-class-table">
+            <thead>
+                <tr>
+                    <th>Period</th>
+                    ${days.map(day => `<th>${day}</th>`).join("")}
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    for (const period of periods) {
+        html += `<tr><th>${period}</th>`;
+
+        for (const day of days) {
+            const classes = schedule[day]?.[period];
+
+            if (classes && classes.length) {
+                html += `<td class="has-class">`;
+
+                for (const cls of classes) {
+                    html += `
+                        <div class="class-item">
+                            <small>${cls.course_id}</small>
+                            <strong>${cls.name}</strong>
+                            <small>${cls.teacher}</small>
+                            <small>${cls.room}</small>
+                        </div>
+                    `;
+                }
+
+                html += `</td>`;
+            } else {
+                html += `<td></td>`;
+            }
+        }
+
+        html += `</tr>`;
+    }
+
+    html += `
+            </tbody>
+        </table>
+    `;
+
+    container.innerHTML = html;
+}
+
+async function updateScheduleMyClass(options) {
+    let courses = await window.pywebview.api.schedule_my_class(options);
+
+    // Handle courses being {}, null, undefined, etc.
+    if (!Array.isArray(courses)) {
+        courses = [];
+    }
+
+    const days = ["一", "二", "三", "四", "五"];
+    const periods = [
+        "01", "02", "03", "04", "05",
+        "06", "07", "08", "09", "10",
+        "11", "12", "13"
+    ];
+
+    // Initialize empty schedule
+    const schedule = {};
+    for (const day of days) {
+        schedule[day] = {};
+    }
+
+    for (const course of courses) {
+        if (!course.schedule) continue;
+
+        for (const entry of course.schedule) {
+
+            // Skip empty/invalid schedule entries
+            if (!entry || entry.trim() === "/     /") continue;
+
+            const match = entry.match(/^([一二三四五六日])\s*\/\s*([\d,]+)\s*\/\s*(.+)$/);
+
+            if (!match) continue;
+
+            const [, day, periodStr, room] = match;
+
+            if (!schedule[day]) {
+                schedule[day] = {};
+            }
+
+            for (const period of periodStr.split(",")) {
+                const p = period.trim();
+
+                if (!schedule[day][p]) {
+                    schedule[day][p] = [];
+                }
+
+                schedule[day][p].push({
+                    course_id: course.course_id,
+                    name: course.course_name,
+                    teacher: course.teachers?.join(", ") || "",
+                    room: room.trim(),
+                });
+            }
+        }
+    }
+
+    // Always render, even when schedule is empty
+    renderScheduleMyClass(schedule, days, periods);
+    document.getElementById("load-my-class-section-btn").innerText="Load My Class"
+}
+
+
+
 // Login Handler
 async function handleLogin() {
     const user = document.getElementById('username').value;

@@ -43,6 +43,10 @@ class UI_Api:
             "get_course_selection_by_course_code.json",
             "get_course_selection_by_course_code",
         ),
+        "get_courses_we_have_this_semester": (
+            "courses.json",
+            "get_courses_we_have_this_semester",
+        )
     }
 
     def _get_api(self):
@@ -122,6 +126,8 @@ class UI_Api:
         self.required_courses_and_graduation_credits(withUpdate=True)
         self.missing_required_courses(withUpdate=True)
         self.course_selection_by_course_code(withUpdate=True)
+        self.courses_we_have_this_semester(withUpdate=True)
+
         return {"done": True}
         
     def student_info(self, withUpdate=False):
@@ -165,6 +171,83 @@ class UI_Api:
             "get_course_selection_by_course_code",
             withUpdate
         )
+    
+    def courses_we_have_this_semester(self, withUpdate=False):
+        return self._data(
+            "courses.json",
+            "get_courses_we_have_this_semester",
+            withUpdate
+        )
+
+    def schedule_my_class(self, schedule_data=None):
+        """
+        this function allow user add or remove class from their planing schedule
+        schedule_data should be a dict with keys: "options" (add/remove), "course_code" (for add), "course_id" (for remove)
+        example: {"options": "remove", "course_id": "12345"}
+        """
+        data = get_storage_data("my_class.json")
+        if data is None:
+            data = {}
+
+        if schedule_data is None:
+            return data
+        
+        if "options" in schedule_data:
+            # Process the schedule data
+            if  schedule_data["options"] == "add":
+                modified_class = self.find_class_by_course_code(schedule_data["course_id"])
+                if modified_class:
+                    data.append(modified_class)
+
+            elif schedule_data["options"] == "remove":
+                data = [cls for cls in data if cls["course_id"] != schedule_data["course_id"]]
+            elif schedule_data["options"] == "clear":
+                data = []
+            elif schedule_data["options"] == "load":
+                data = self.course_selection_by_course_code()
+                
+            save_storage_data("my_class.json", data)
+            return data
+        else:
+            return data
+
+    def find_class_by_course_code(self, course_code):
+        """
+        Find a course by course code and map it to the normalized format.
+        """
+        data = get_storage_data("courses.json")
+
+        for course in data:
+            if course.get("code") == course_code:
+                return {
+                    "course_id": course.get("seq", ""),
+                    "dept": (
+                        course.get("dept_block", "").split("－")[0]
+                        if course.get("dept_block")
+                        else ""
+                    ),
+                    "grade": course.get("grade", ""),
+                    "course_name": course.get("title", "").strip(),
+                    "course_code": course.get("code", ""),
+                    "credits": str(course.get("credits", "")),
+                    # 必 -> R (Required), 選 -> C (Elective)
+                    "required": (
+                        "R"
+                        if course.get("required") == "必"
+                        else "C"
+                        if course.get("required") == "選"
+                        else course.get("required", "")
+                    ),
+                    "teachers": (
+                        [course["teacher"]]
+                        if course.get("teacher")
+                        else []
+                    ),
+                    "schedule": course.get("times", []),
+                    "seat_numbers": [],  # Source data doesn't contain seat information.
+                }
+
+        return None
 
     def auth_login(self):
         global AUTH, API
@@ -243,8 +326,9 @@ def notify_user_and_exit(title, message, win_url=None):
 
 def get_storage_data(fileName:str):
     data = {}
-    with open(".userData/"+fileName, "r", encoding="utf-8") as f:
-        data = json.load(f)      
+    if os.path.exists(".userData/"+fileName):
+        with open(".userData/"+fileName, "r", encoding="utf-8") as f:
+            data = json.load(f)
     return data
 
 def save_storage_data(fileName:str,data):
