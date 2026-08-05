@@ -480,41 +480,13 @@ class EMISStudentAPI:
             current["seat_numbers"] = list(dict.fromkeys(current["seat_numbers"]))
             courses.append(current)
         return courses
+
     def get_course_selection_by_course_codeAsIlifeAPI(self):
+        """
+        TODO
+        """
         courses = self.get_course_selection_by_course_code()
 
-
-
-        pass
-    # 查詢選課/考試資料(依上課星期、節次列表)
-    def get_course_and_exam_schedule(self, YrSem, stu_no):
-        url = f"https://sso.tku.edu.tw/aissinfo/emis/TMWC090_result.aspx?YrSem={YrSem}"
-        pass
-
-    # 查詢考試資料
-    def get_exam_info(self):
-        #N/A
-        pass
-
-    # 查詢考試小表
-    def get_exam_summary_table(self):
-        #N/A
-        pass
-
-    # 查詢扣考資料
-    def get_exam_disqualification_info(self):
-        url = "https://sso.tku.edu.tw/aissinfo/emis/TMWC071.aspx"
-        pass
-
-    # 查詢本學期期中成績
-    def get_current_semester_midterm_grades(self):
-        url = "https://sso.tku.edu.tw/aissinfo/emis/TMWC071.aspx"
-        pass
-
-    # 查詢本學期學期成績
-    def get_current_semester_final_grades(self):
-
-        pass
 
     # 畢業班缺修學分資訊查詢
     def get_graduating_student_missing_credits(self, debug=False):
