@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My Desktop App</title>
+    <link rel="stylesheet" href="pico.min.css">
+    <style>
+        .page { display: none; }
+        .page.active { display: block; }
+    </style>
+</head>
+<body class="container" style="padding-top: 20px;">
+
+    <!-- LOADING SCREEN (Shown briefly while checking Python) -->
+    <section id="page-loading" class="page active">
+        <p>Loading app...</p>
+    </section>
+
+    <!-- LOGIN SCREEN -->
+    <section id="page-login" class="page">
+        <h1>TKU EMI Suckless</h1>
+        <h2>Login</h2>
+        <input type="text" id="username" placeholder="Username">
+        <input type="password" id="password" placeholder="Password">
+        <button id="loginbtn" onclick="handleLogin()">Sign In</button>
+        <p id="login-error" style="color: red;"></p>
+    </section>
+
+    <!-- MAIN DASHBOARD -->
+    <section id="page-dashboard" class="page">
+        <h2>Welcome back, <span id="user-display"></span>!</h2>
+        <p>You stayed logged in across app restarts.</p>
+        <button onclick="handleLogout()" class="secondary">Logout</button>
+    </section>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+beautifulsoup4
+requests
+pywebview
+pyinstaller
+pycairo
+PyGObject

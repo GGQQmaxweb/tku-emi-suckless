@@ -2,16 +2,21 @@
 import os
 import requests
 import re
-from dotenv import load_dotenv
 requests.packages.urllib3.disable_warnings()
 
 class Authenticator:
-    def __init__(self):
-        load_dotenv()
-        self.username = os.getenv('USERNAMEID')
-        self.password = os.getenv('PASSWORD')
+    def __init__(self,username=None,password=None):
+        if username and password:
+            self.username = username
+            self.password = password
+
+        if username==None and password==None:
+            self.username = os.getenv('USERNAMEID')
+            self.password = os.getenv('PASSWORD')
+        
         if not self.username or not self.password:
             raise ValueError("請在 .env 檔案中設定 USERNAMEID 與 PASSWORD 環境變數。")
+        
         self.session = requests.Session()
         self.session.verify = False
         self.session.headers.update({'Referer': 'https://tku.schroll.edu.tw/'})
@@ -65,7 +70,7 @@ class Authenticator:
         response = self.session.post(login_url, data=payload)
 
         if self.check_login_success(response) != True:
-            raise ValueError("Username or password may be incorrect at the OS level, go take a look at env")
+            return False
         headers = {'Referer': login_url, 'Upgrade-Insecure-Requests': '1'}
         user_redirect_url = (
             f"https://sso.tku.edu.tw/NEAI/eaido.jsp?"
