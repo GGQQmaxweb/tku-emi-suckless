@@ -107,8 +107,12 @@
             <option value="必">必</option>
             <option value="選">選</option>
         </select>
-
-        <input id="search-dept" placeholder="Department e.g. 資管">
+        <div class="dept-search">
+            <button id="set-my-dept" onclick="setMyDepartment()" class="small">
+                My Department
+            </button>
+            <input id="search-dept" placeholder="Department e.g. 資管">
+        </div>
         <button onclick="searchButtonClick()">
         Search
         </button>

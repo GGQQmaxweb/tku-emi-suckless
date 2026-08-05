@@ -465,3 +465,13 @@ a:hover {
 #search-required option {
     padding: 8px;
 }
+
+.dept-search {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.dept-search input {
+    flex: 1; /* Input fills remaining space */
+}

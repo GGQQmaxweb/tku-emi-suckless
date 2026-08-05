@@ -565,6 +565,11 @@ async function searchButtonClick(){
 
 }
 
+async function setMyDepartment() {
+    const myDepartmentinfo = await window.pywebview.api.student_info();
+    document.getElementById("search-dept").value = myDepartmentinfo.department
+}
+
 function parseTimeTokens(times) {
     const tokens = [];
 
