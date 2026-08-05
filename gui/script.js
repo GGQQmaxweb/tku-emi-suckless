@@ -391,6 +391,30 @@ async function updateScheduleMyClass(options) {
     document.getElementById("load-my-class-section-btn").innerText="Load My Class"
 }
 
+async function exportScheduleClass() {
+    let exportSchedules = await window.pywebview.api.schedule_my_class();
+
+    if (!Array.isArray(exportSchedules)) {
+        exportSchedules = [];
+    }
+
+    const exportText = exportSchedules
+        .map(s => s.course_id)
+        .join("\n");
+
+    const container = document.getElementById("export-schedule-my-class");
+
+    container.innerHTML = `
+        <textarea id="export_textarea">${exportText}</textarea>
+        <br>
+        <button id="remove-export">Remove Export</button>
+    `;
+
+    document.getElementById("remove-export").addEventListener("click", () => {
+        container.innerHTML = "";
+    });
+}
+
 async function updateCourses() {
     await window.api.courses_we_have_this_semester(true)
 }

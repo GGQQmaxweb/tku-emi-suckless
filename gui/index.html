@@ -83,7 +83,9 @@
             <button id="load-my-class-section-btn" onclick="updateScheduleMyClass({options:'load'}),document.getElementById('load-my-class-section-btn').innerHTML = '<p>Loading schedule my class...</p>'" class="primary">Load My Class</button>
             <button id="clear-my-class-section-btn" onclick="updateScheduleMyClass({options:'clear'})">Clear My Class</button>
             <button onclick="showPage('find-class')">Find Class</button>
+            <button onclick="exportScheduleClass()">Export</button>
         </div>
+        <div id="export-schedule-my-class"></div>
         <div id="schedule-my-class-content">
             <p>Loading schedule my class...</p>
         </div>
