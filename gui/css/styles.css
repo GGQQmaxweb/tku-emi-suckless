@@ -324,3 +324,34 @@ a:hover {
         font-size: 1.8rem;
     }
 }
+
+.my-class-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+}
+
+.my-class-table th,
+.my-class-table td {
+    border: 1px solid #ddd;
+    text-align: center;
+    vertical-align: top;
+}
+
+.my-class-table thead th {
+    background: #10335e;
+}
+
+.my-class-table .has-class {
+    background: #3572ac;
+}
+
+.my-class-table strong {
+    display: block;
+    font-size: 14px;
+}
+
+.my-class-table small {
+    display: block;
+    color: #dcdbdb;
+}

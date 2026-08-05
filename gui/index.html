@@ -34,6 +34,7 @@
         <div>
             <button onclick="showPage('required-courses'),updateRequiredCourses()">View Required Courses</button>
             <button onclick="showPage('all-grades'),updateAllGrades()">View All Grades</button>
+            <button onclick="showPage('my-class-section'),updateMyClass()">View My Class</button>
         </div>
         
             <div class="progress-container">
@@ -63,6 +64,15 @@
             <p>Loading all grades...</p>
         </div>
         <button id="update-all-grades-btn" onclick="updateAllGrades(true),document.getElementById('update-all-grades-btn').innerHTML = '<p>Loading all grades...</p>'" class="primary">Update All Grades</button>
+    </section>
+
+    <section id="my-class-section" class="page">
+        <button onclick="showPage('page-dashboard')" class="secondary">Back to Dashboard</button>
+        <h2>My Class</h2>
+        <div id="my-class-content">
+            <p>Loading my class...</p>
+        </div>
+        <button id="update-my-class-btn" onclick="updateMyClass(true),document.getElementById('update-my-class-btn').innerHTML = '<p>Loading my class...</p>'" class="primary">Update My Class</button>
     </section>
 
 
