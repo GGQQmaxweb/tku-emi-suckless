@@ -306,7 +306,7 @@ function renderScheduleMyClass(schedule, days, periods) {
 
                 html += `</td>`;
             } else {
-                html += `<td></td>`;
+                html += `<td><button onclick="searchClassTimeClick({'day':'${day}','period':'${period}'})" class="small">+</button></td>`;
             }
         }
 
@@ -319,6 +319,12 @@ function renderScheduleMyClass(schedule, days, periods) {
     `;
 
     container.innerHTML = html;
+}
+
+async function searchClassTimeClick(time) {
+    const searchTime = `${time.day},${Number(time.period)}`    
+    document.getElementById('search-time').value = searchTime
+    showPage('find-class')
 }
 
 async function updateScheduleMyClass(options) {
