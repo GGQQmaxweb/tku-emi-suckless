@@ -97,13 +97,7 @@ jobs:
           pip install PyGObject pywebview pyinstaller pyinstaller-hooks-contrib
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-          pyinstaller --noconsole --onedir --name "myapp_light" \
-            --collect-all gi \
-            --collect-all webview \
-            --hidden-import "gi.repository.Gtk" \
-            --hidden-import "gi.repository.WebKit2" \
-            --add-data "gui:gui" \
-            main.py
+          pyinstaller myapp_light.spec
         shell: bash
 
       - name: Package .deb and .rpm with fpm
