@@ -74,56 +74,62 @@ jobs:
           pyinstaller --noconsole --onedir --name "MyApp-macOS" --add-data "gui:gui" main.py
 
       # -------------------------------------------------------------
-      # LINUX BUILD (Qt / PySide6 AppImage)
+      # LINUX DEB & RPM BUILD (Using fpm)
       # -------------------------------------------------------------
-      - name: Install Python Dependencies (Linux)
+      - name: Install Build Tools & fpm
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ruby ruby-dev rubygems build-essential rpm
+          sudo gem install --no-document fpm
+
+      - name: Build Lightweight PyInstaller App
         if: matrix.os == 'ubuntu-latest'
         run: |
           python -m pip install --upgrade pip setuptools wheel
-          # Installing PySide6 & qtpy allows pywebview to use QtWebEngine seamlessly
-          pip install "pywebview[pyside6]" qtpy pyinstaller
+          pip install pywebview pyinstaller pyinstaller-hooks-contrib
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-        shell: bash
 
-      - name: Build Linux PyInstaller & AppImage
+          # Build raw PyInstaller folder (~10MB)
+          pyinstaller --noconsole --onedir --name "myapp" --add-data "gui:gui" main.py
+
+      - name: Package .deb and .rpm with fpm
         if: matrix.os == 'ubuntu-latest'
-        env:
-          APPIMAGE_EXTRACT_AND_RUN: 1
         run: |
-          # 1. Build directory bundle with PyInstaller (PyInstaller auto-detects PySide6)
-          pyinstaller --noconsole --onedir --name "MyApp" --add-data "gui:gui" main.py
-
-          # 2. Download appimagetool
-          wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage -O appimagetool
-          chmod +x appimagetool
-
-          # 3. Create basic AppDir structure for AppImage
-          mkdir -p AppDir/usr/bin
-          cp -r dist/MyApp/* AppDir/usr/bin/
-
-          # 4. Create AppRun entrypoint
-          cat << 'EOF' > AppDir/AppRun
-          #!/bin/sh
-          HERE="$(dirname "$(readlink -f "${0}")")"
-          exec "$HERE/usr/bin/MyApp" "$@"
-          EOF
-          chmod +x AppDir/AppRun
-
-          # 5. Create desktop entry file
-          cat << 'EOF' > AppDir/myapp.desktop
+          # 1. Create desktop shortcut file
+          mkdir -p build_assets
+          cat << 'EOF' > build_assets/myapp.desktop
           [Desktop Entry]
           Name=MyApp
-          Exec=AppRun
-          Icon=myapp
+          Exec=/opt/myapp/myapp
           Type=Application
           Categories=Utility;
+          Terminal=false
           EOF
 
-          # Dummy icon
-          touch AppDir/myapp.png
+          # 2. Build .deb Package (With Ubuntu/Debian dependencies)
+          fpm -s dir -t deb \
+            -n myapp \
+            -v 1.0.0 \
+            --architecture amd64 \
+            --prefix /opt/myapp \
+            --depends "python3-gi" \
+            --depends "gir1.2-gtk-3.0" \
+            --depends "gir1.2-webkit2-4.1 | gir1.2-webkit2-4.0" \
+            --inputs/desktop=build_assets/myapp.desktop=/usr/share/applications/myapp.desktop \
+            -C dist/myapp .
 
-          # 6. Compile AppImage
-          ARCH=x86_64 ./appimagetool AppDir MyApp-Linux.AppImage
+          # 3. Build .rpm Package (With Fedora/RHEL dependencies)
+          fpm -s dir -t rpm \
+            -n myapp \
+            -v 1.0.0 \
+            --architecture x86_64 \
+            --prefix /opt/myapp \
+            --depends "python3-gobject" \
+            --depends "gtk3" \
+            --depends "webkit2gtk3" \
+            --inputs/desktop=build_assets/myapp.desktop=/usr/share/applications/myapp.desktop \
+            -C dist/myapp .
           
       # Artifact Uploads
       - name: Upload Windows Artifact
