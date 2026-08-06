@@ -24,6 +24,7 @@ jobs:
             asset_name: |
               *.deb
               *.rpm
+              *.AppImage
 
     steps:
       - name: Checkout Code
@@ -75,34 +76,46 @@ jobs:
         run: |
           pyinstaller --noconsole --onedir --name "MyApp-macOS" --add-data "gui:gui" main.py
 
+# -------------------------------------------------------------
+      # LINUX BUILD (.deb, .rpm & AppImage Backup)
       # -------------------------------------------------------------
-      # LINUX DEB & RPM BUILD (Using fpm)
-      # -------------------------------------------------------------
-      - name: Install Build Tools & fpm
+      - name: Install System Packaging Tools & Dependencies
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
-          sudo apt-get install -y ruby ruby-dev rubygems build-essential rpm
+          sudo apt-get install -y \
+            ruby ruby-dev rubygems build-essential rpm \
+            python3-gi python3-gi-cairo gir1.2-gtk-3.0 \
+            gir1.2-webkit2-4.0 gir1.2-webkit2-4.1 \
+            libgirepository1.0-dev libcairo2-dev pkg-config python3-dev \
+            libfuse2t64 || sudo apt-get install -y libfuse2
           sudo gem install --no-document fpm
+        shell: bash
 
-      - name: Build Lightweight PyInstaller App
+      - name: Install Python Dependencies
         if: matrix.os == 'ubuntu-latest'
         run: |
           python -m pip install --upgrade pip setuptools wheel
           pip install pywebview pyinstaller pyinstaller-hooks-contrib
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        shell: bash
 
-          # Build raw PyInstaller folder (~10MB)
+      - name: Build PyInstaller Binary
+        if: matrix.os == 'ubuntu-latest'
+        run: |
           pyinstaller --noconsole --onedir --name "myapp" --add-data "gui:gui" main.py
+        shell: bash
 
+      # -------------------------------------------------------------
+      # PRIMARY PACKAGES: .deb and .rpm (via fpm)
+      # -------------------------------------------------------------
       - name: Package .deb and .rpm with fpm
         if: matrix.os == 'ubuntu-latest'
         run: |
-          # 1. Create a temporary staging folder to organize files cleanly
+          # Setup staging layout for fpm
           mkdir -p staging/opt/myapp
           mkdir -p staging/usr/share/applications
 
-          # 2. Copy PyInstaller app and desktop shortcut into staging
           cp -r dist/myapp/* staging/opt/myapp/
           
           cat << 'EOF' > staging/usr/share/applications/myapp.desktop
@@ -114,7 +127,7 @@ jobs:
           Terminal=false
           EOF
 
-          # 3. Build .deb Package (Ubuntu / Debian)
+          # Build .deb
           fpm -s dir -t deb \
             -n myapp \
             -v 1.0.0 \
@@ -124,7 +137,7 @@ jobs:
             --depends "gir1.2-webkit2-4.1 | gir1.2-webkit2-4.0" \
             -C staging .
 
-          # 4. Build .rpm Package (Fedora / RedHat)
+          # Build .rpm
           fpm -s dir -t rpm \
             -n myapp \
             -v 1.0.0 \
@@ -133,6 +146,49 @@ jobs:
             --depends "gtk3" \
             --depends "(webkit2gtk4.1 or webkit2gtk3 or webkit2gtk4.0)" \
             -C staging .
+        shell: bash
+
+      # -------------------------------------------------------------
+      # BACKUP PLAN: AppImage
+      # (continue-on-error ensures .deb/.rpm aren't blocked if this fails)
+      # -------------------------------------------------------------
+      - name: Build AppImage (Backup)
+        if: matrix.os == 'ubuntu-latest'
+        continue-on-error: true
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: 1
+        run: |
+          # 1. Download appimagetool
+          wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage -O appimagetool
+          chmod +x appimagetool
+
+          # 2. Create AppDir structure from PyInstaller dist output
+          mkdir -p AppDir/usr/bin
+          cp -r dist/myapp/* AppDir/usr/bin/
+
+          # 3. Entrypoint script
+          cat << 'EOF' > AppDir/AppRun
+          #!/bin/sh
+          HERE="$(dirname "$(readlink -f "${0}")")"
+          exec "$HERE/usr/bin/myapp" "$@"
+          EOF
+          chmod +x AppDir/AppRun
+
+          # 4. Desktop entry & icon
+          cat << 'EOF' > AppDir/myapp.desktop
+          [Desktop Entry]
+          Name=MyApp
+          Exec=AppRun
+          Icon=myapp
+          Type=Application
+          Categories=Utility;
+          EOF
+
+          touch AppDir/myapp.png
+
+          # 5. Build AppImage
+          ARCH=x86_64 ./appimagetool AppDir MyApp-Linux.AppImage
+        shell: bash
           
       # Artifact Uploads
       - name: Upload Windows Artifact
@@ -149,12 +205,12 @@ jobs:
           name: ${{ matrix.artifact_name }}
           path: dist/MyApp-macOS.app
       
-      - name: Upload Linux Artifacts (.deb & .rpm)
+      - name: Upload Linux Artifacts
         if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
-          # Uploads all .deb and .rpm files generated by fpm, hope so
           path: |
             *.deb
             *.rpm
+            *.AppImage
