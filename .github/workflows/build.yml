@@ -96,9 +96,14 @@ jobs:
       - name: Package .deb and .rpm with fpm
         if: matrix.os == 'ubuntu-latest'
         run: |
-          # 1. Create desktop shortcut file
-          mkdir -p build_assets
-          cat << 'EOF' > build_assets/myapp.desktop
+          # 1. Create a temporary staging folder to organize files cleanly
+          mkdir -p staging/opt/myapp
+          mkdir -p staging/usr/share/applications
+
+          # 2. Copy PyInstaller app and desktop shortcut into staging
+          cp -r dist/myapp/* staging/opt/myapp/
+          
+          cat << 'EOF' > staging/usr/share/applications/myapp.desktop
           [Desktop Entry]
           Name=MyApp
           Exec=/opt/myapp/myapp
@@ -107,29 +112,25 @@ jobs:
           Terminal=false
           EOF
 
-          # 2. Build .deb Package (With Ubuntu/Debian dependencies)
+          # 3. Build .deb Package (Ubuntu / Debian)
           fpm -s dir -t deb \
             -n myapp \
             -v 1.0.0 \
             --architecture amd64 \
-            --prefix /opt/myapp \
             --depends "python3-gi" \
             --depends "gir1.2-gtk-3.0" \
             --depends "gir1.2-webkit2-4.1 | gir1.2-webkit2-4.0" \
-            --inputs/desktop=build_assets/myapp.desktop=/usr/share/applications/myapp.desktop \
-            -C dist/myapp .
+            -C staging .
 
-          # 3. Build .rpm Package (With Fedora/RHEL dependencies)
+          # 4. Build .rpm Package (Fedora / RedHat)
           fpm -s dir -t rpm \
             -n myapp \
             -v 1.0.0 \
             --architecture x86_64 \
-            --prefix /opt/myapp \
             --depends "python3-gobject" \
             --depends "gtk3" \
             --depends "webkit2gtk3" \
-            --inputs/desktop=build_assets/myapp.desktop=/usr/share/applications/myapp.desktop \
-            -C dist/myapp .
+            -C staging .
           
       # Artifact Uploads
       - name: Upload Windows Artifact
