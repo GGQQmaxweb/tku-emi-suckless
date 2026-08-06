@@ -420,15 +420,19 @@ async function exportScheduleClass() {
     });
 }
 
-async function updateCourses() {
-    await window.api.courses_we_have_this_semester(true)
-}
+
 
 let courses = [];
 
 // Load your large json once
 async function loadCourses() {
     courses = await window.pywebview.api.courses_we_have_this_semester()
+}
+
+async function updateCourses() {
+    document.getElementById('update-courses-btn').innerText = "loading"
+    courses = await window.pywebview.api.courses_we_have_this_semester(true)
+    document.getElementById('update-courses-btn').innerText = "Get the lastest Courses"
 }
 
 function normalize(text) {
