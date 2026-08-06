@@ -73,35 +73,42 @@ jobs:
         run: |
           pyinstaller --noconsole --onedir --name "MyApp-macOS" --add-data "gui:gui" main.py
 
-      # Linux AppImage Build
+      # Linux AppImage Build with PyGObject Data Collection
       - name: Build Linux PyInstaller & AppImage
         if: matrix.os == 'ubuntu-latest'
         env:
           APPIMAGE_EXTRACT_AND_RUN: 1
         run: |
-          # Build PyInstaller bundle including GObject typelibs
+          # 1. Locate system typelib directory (where GTK and WebKit2 typelibs live on Ubuntu)
+          export GI_TYPELIB_PATH=/usr/lib/x86_64-linux-gnu/girepository-1.0
+          
+          # 2. Build PyInstaller bundle forcing collection of gi and all typelibs
           pyinstaller --noconsole --onedir --name "MyApp" \
-            --collect-data gi_typelibs \
-            --collect-submodules gi \
-            --add-data "gui:gui" main.py
+            --collect-all gi \
+            --collect-all webview \
+            --add-data "/usr/lib/x86_64-linux-gnu/girepository-1.0:gi_typelibs" \
+            --add-data "gui:gui" \
+            main.py
 
-          # Download appimagetool
+          # 3. Download appimagetool
           wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage -O appimagetool
           chmod +x appimagetool
 
-          # Create basic AppDir structure
+          # 4. Create AppDir structure
           mkdir -p AppDir/usr/bin
           cp -r dist/MyApp/* AppDir/usr/bin/
 
-          # Create AppRun entrypoint
+          # 5. Create AppRun entrypoint WITH GI_TYPELIB_PATH set for runtime
           cat << 'EOF' > AppDir/AppRun
           #!/bin/sh
           HERE="$(dirname "$(readlink -f "${0}")")"
+          export GI_TYPELIB_PATH="$HERE/usr/bin/gi_typelibs:$GI_TYPELIB_PATH"
+          export LD_LIBRARY_PATH="$HERE/usr/bin:$LD_LIBRARY_PATH"
           exec "$HERE/usr/bin/MyApp" "$@"
           EOF
           chmod +x AppDir/AppRun
 
-          # Create desktop entry file
+          # 6. Create desktop entry file
           cat << 'EOF' > AppDir/myapp.desktop
           [Desktop Entry]
           Name=MyApp
