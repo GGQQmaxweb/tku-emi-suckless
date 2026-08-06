@@ -73,42 +73,43 @@ jobs:
         run: |
           pyinstaller --noconsole --onedir --name "MyApp-macOS" --add-data "gui:gui" main.py
 
-      # Linux AppImage Build with PyGObject Data Collection
+      # -------------------------------------------------------------
+      # LINUX BUILD (Qt / PySide6 AppImage)
+      # -------------------------------------------------------------
+      - name: Install Python Dependencies (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          # Installing PySide6 & qtpy allows pywebview to use QtWebEngine seamlessly
+          pip install "pywebview[pyside6]" qtpy pyinstaller
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        shell: bash
+
       - name: Build Linux PyInstaller & AppImage
         if: matrix.os == 'ubuntu-latest'
         env:
           APPIMAGE_EXTRACT_AND_RUN: 1
         run: |
-          # 1. Locate system typelib directory (where GTK and WebKit2 typelibs live on Ubuntu)
-          export GI_TYPELIB_PATH=/usr/lib/x86_64-linux-gnu/girepository-1.0
-          
-          # 2. Build PyInstaller bundle forcing collection of gi and all typelibs
-          pyinstaller --noconsole --onedir --name "MyApp" \
-            --collect-all gi \
-            --collect-all webview \
-            --add-data "/usr/lib/x86_64-linux-gnu/girepository-1.0:gi_typelibs" \
-            --add-data "gui:gui" \
-            main.py
+          # 1. Build directory bundle with PyInstaller (PyInstaller auto-detects PySide6)
+          pyinstaller --noconsole --onedir --name "MyApp" --add-data "gui:gui" main.py
 
-          # 3. Download appimagetool
+          # 2. Download appimagetool
           wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage -O appimagetool
           chmod +x appimagetool
 
-          # 4. Create AppDir structure
+          # 3. Create basic AppDir structure for AppImage
           mkdir -p AppDir/usr/bin
           cp -r dist/MyApp/* AppDir/usr/bin/
 
-          # 5. Create AppRun entrypoint WITH GI_TYPELIB_PATH set for runtime
+          # 4. Create AppRun entrypoint
           cat << 'EOF' > AppDir/AppRun
           #!/bin/sh
           HERE="$(dirname "$(readlink -f "${0}")")"
-          export GI_TYPELIB_PATH="$HERE/usr/bin/gi_typelibs:$GI_TYPELIB_PATH"
-          export LD_LIBRARY_PATH="$HERE/usr/bin:$LD_LIBRARY_PATH"
           exec "$HERE/usr/bin/MyApp" "$@"
           EOF
           chmod +x AppDir/AppRun
 
-          # 6. Create desktop entry file
+          # 5. Create desktop entry file
           cat << 'EOF' > AppDir/myapp.desktop
           [Desktop Entry]
           Name=MyApp
@@ -118,8 +119,10 @@ jobs:
           Categories=Utility;
           EOF
 
+          # Dummy icon
           touch AppDir/myapp.png
 
+          # 6. Compile AppImage
           ARCH=x86_64 ./appimagetool AppDir MyApp-Linux.AppImage
           
       # Artifact Uploads
