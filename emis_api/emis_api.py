@@ -508,26 +508,47 @@ def parse_grade_and_credits(raw_grade, credits):
         return score, credits, credits, "passed"
     else:
         return score, 0, credits, "failed"
-
+        
 def parse_grade_field(grade_str):
     """
-    Parse a string like '資管三Ｃ' into department, year, and class.
-    Returns a dict: {'department': ..., 'year': ..., 'class': ...}
+    Parse strings like:
+      資管三Ｃ
+      資管三C
+      電機系電資四
+      資工一A
+      資工一Ａ
+
+    Returns:
+    {
+        'department': ...,
+        'year': ...,
+        'class': ...
+    }
     """
-    # Match: 1+ Chinese chars (department) + 1 Chinese numeral (year) + optional letter (class)
-    match = re.match(r"([\u4e00-\u9fff]+)([一二三四五六七八九十]+)([A-Z]?)", grade_str)
-    if match:
-        department, year, class_letter = match.groups()
+    grade_str = grade_str.strip()
+
+    match = re.fullmatch(
+        r"(?P<department>[\u4e00-\u9fff]+)"
+        r"(?P<year>[一二三四五六七八九十]+)"
+        r"(?P<class>[A-ZＡ-Ｚ]?)",
+        grade_str
+    )
+
+    if not match:
         return {
-            'department': department,
-            'year': year,
-            'class': class_letter or None
+            "department": None,
+            "year": None,
+            "class": None,
         }
-    else:
-        # fallback if format unexpected
-        return {
-            'department': None,
-            'year': None,
-            'class': None
-        }
-    
+
+    class_letter = match.group("class") or None
+
+    # Convert full-width A-Z to normal A-Z
+    if class_letter:
+        class_letter = chr(ord(class_letter) - 0xFEE0) if "Ａ" <= class_letter <= "Ｚ" else class_letter
+
+    return {
+        "department": match.group("department"),
+        "year": match.group("year"),
+        "class": class_letter,
+    }
