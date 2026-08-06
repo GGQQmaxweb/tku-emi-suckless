@@ -30,6 +30,7 @@ async function updateUserLocalData() {
     await getDashboardData();
     await updateProgressBar();
     await userInformation();
+    loadCourses();
     document.getElementById('UpdataUserdataBtn').innerText = "Update User Data";
 }
 
@@ -326,7 +327,7 @@ function renderScheduleMyClass(schedule, days, periods) {
 }
 
 async function searchClassTimeClick(time) {
-    const searchTime = `${time.day},${Number(time.period)}`    
+    const searchTime = `${time.day},${Number(time.period)}`
     document.getElementById('search-time').value = searchTime
     runSearch({
         times: searchTime,
@@ -392,7 +393,7 @@ async function updateScheduleMyClass(options) {
 
     // Always render, even when schedule is empty
     renderScheduleMyClass(schedule, days, periods);
-    document.getElementById("load-my-class-section-btn").innerText="Load My Class"
+    document.getElementById("load-my-class-section-btn").innerText = "Load My Class"
 }
 
 async function exportScheduleClass() {
@@ -555,7 +556,7 @@ async function runSearch(options = {}) {
 
 }
 
-async function searchButtonClick(){
+async function searchButtonClick() {
 
     runSearch({
         title: document.getElementById("search-title").value,
@@ -594,7 +595,7 @@ async function handleLogin() {
     const user = document.getElementById('username').value;
     const pass = document.getElementById('password').value;
     document.getElementById('loginbtn').innerText = "Login check took time please wait"
-    
+
     const success = await window.pywebview.api.authenticate(user, pass);
 
     if (success) {

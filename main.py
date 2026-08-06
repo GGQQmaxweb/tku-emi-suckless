@@ -1,8 +1,35 @@
+import os
 import sys
+
+# Ensure PyInstaller runtime loads bundled GTK/WebKit typelibs or system libraries
+if getattr(sys, 'frozen', False):
+    bundle_dir = getattr(sys, '_MEIPASS', os.path.dirname(sys.executable))
+    typelib_path = os.path.join(bundle_dir, 'gi_typelibs')
+    
+    paths = []
+    if os.path.exists(typelib_path):
+        paths.append(typelib_path)
+    
+    # Common system typelib paths on different Linux distributions (e.g. Fedora, Debian/Ubuntu, Arch)
+    system_paths = [
+        "/usr/lib64/girepository-1.0",
+        "/usr/lib/girepository-1.0",
+        "/usr/lib/x86_64-linux-gnu/girepository-1.0",
+        "/usr/lib/i386-linux-gnu/girepository-1.0"
+    ]
+    for p in system_paths:
+        if os.path.exists(p) and p not in paths:
+            paths.append(p)
+            
+    existing = os.environ.get('GI_TYPELIB_PATH')
+    if existing:
+        paths.append(existing)
+        
+    os.environ['GI_TYPELIB_PATH'] = os.pathsep.join(paths)
+
 import platform
 import subprocess
 import webview
-import os
 import json
 from functools import wraps
 import re
@@ -384,7 +411,34 @@ def save_storage_data(fileName:str,data):
     
     with open(".userData/"+fileName, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
-            
+
+def show_native_error_dialog(message):
+    # Clean env so subprocesses use system libraries instead of PyInstaller's bundled libssl/libssh
+    clean_env = os.environ.copy()
+    clean_env.pop("LD_LIBRARY_PATH", None)
+
+    # 1. Try zenity
+    try:
+        subprocess.run([
+            "zenity", "--error", 
+            "--title=Dependency Missing", 
+            f"--text={message}"
+        ], check=True, env=clean_env)
+        return
+    except Exception:
+        pass
+
+    # 2. Try kdialog
+    try:
+        subprocess.run([
+            "kdialog", "--error", message, 
+            "--title", "Dependency Missing"
+        ], check=True, env=clean_env)
+        return
+    except Exception:
+        pass
+
+
 if __name__ == '__main__':
     api = UI_Api()
     webview.create_window('TKU EMI Suckless', 'gui/index.html', js_api=api)
@@ -392,8 +446,7 @@ if __name__ == '__main__':
         webview.start()
     except Exception as e:
         if platform.system() == "Linux":
-            notify_user_and_exit(
-                "Failed to start application window!",
+            show_native_error_dialog(
                 "This app requires WebKitGTK or Qt to run.\n"
                 "Please install it using your system package manager:\n\n"
                 "• Ubuntu/Debian: sudo apt install libwebkit2gtk-4.0-0\n"
