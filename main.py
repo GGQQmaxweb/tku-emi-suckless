@@ -1,8 +1,16 @@
+import os
 import sys
+
+# Ensure PyInstaller runtime loads bundled GTK/WebKit typelibs
+if getattr(sys, 'frozen', False):
+    bundle_dir = getattr(sys, '_MEIPASS', os.path.dirname(sys.executable))
+    typelib_path = os.path.join(bundle_dir, 'gi_typelibs')
+    if os.path.exists(typelib_path):
+        os.environ['GI_TYPELIB_PATH'] = typelib_path + os.pathsep + os.environ.get('GI_TYPELIB_PATH', '')
+
 import platform
 import subprocess
 import webview
-import os
 import json
 from functools import wraps
 import re

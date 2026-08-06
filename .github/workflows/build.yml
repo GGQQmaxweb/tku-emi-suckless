@@ -103,7 +103,16 @@ jobs:
       - name: Build PyInstaller Binary
         if: matrix.os == 'ubuntu-latest'
         run: |
-          pyinstaller --noconsole --onedir --name "myapp" --add-data "gui:gui" main.py
+          # 1. Locate the system typelib path in Ubuntu build container
+          TYPELIB_DIR="/usr/lib/x86_64-linux-gnu/girepository-1.0"
+
+          # 2. Build PyInstaller bundle forcing PyGObject & Webview collection
+          pyinstaller --noconsole --onedir --name "myapp" \
+            --collect-all gi \
+            --collect-all webview \
+            --add-data "$TYPELIB_DIR:gi_typelibs" \
+            --add-data "gui:gui" \
+            main.py
         shell: bash
 
       # -------------------------------------------------------------
