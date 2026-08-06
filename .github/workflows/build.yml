@@ -76,38 +76,30 @@ jobs:
         run: |
           pyinstaller --noconsole --onedir --name "MyApp-macOS" --add-data "gui:gui" main.py
 
-# -------------------------------------------------------------
-      # LINUX BUILD (.deb, .rpm & AppImage Backup)
       # -------------------------------------------------------------
-      - name: Install System Packaging Tools & Dependencies
+      # LINUX BUILD (.deb, .rpm & Qt AppImage)
+      # -------------------------------------------------------------
+      - name: Install System Packaging Tools
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            ruby ruby-dev rubygems build-essential rpm \
-            python3-gi python3-gi-cairo gir1.2-gtk-3.0 \
-            gir1.2-webkit2-4.0 gir1.2-webkit2-4.1 \
-            libgirepository1.0-dev libcairo2-dev pkg-config python3-dev \
-            libfuse2t64 || sudo apt-get install -y libfuse2
+          sudo apt-get install -y ruby ruby-dev rubygems build-essential rpm libfuse2t64 || sudo apt-get install -y libfuse2
           sudo gem install --no-document fpm
         shell: bash
 
-      - name: Install Python Dependencies
+      # -------------------------------------------------------------
+      # STEP 1: Build Lightweight PyInstaller Bundle (for .deb & .rpm)
+      # -------------------------------------------------------------
+      - name: Build Lightweight Bundle (.deb / .rpm)
         if: matrix.os == 'ubuntu-latest'
         run: |
           python -m pip install --upgrade pip setuptools wheel
           pip install pywebview pyinstaller pyinstaller-hooks-contrib
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-        shell: bash
 
-      - name: Build PyInstaller Binary
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          # 1. Locate the system typelib path in Ubuntu build container
+          # Build GTK-based lightweight binary (~10-15MB)
           TYPELIB_DIR="/usr/lib/x86_64-linux-gnu/girepository-1.0"
-
-          # 2. Build PyInstaller bundle forcing PyGObject & Webview collection
-          pyinstaller --noconsole --onedir --name "myapp" \
+          pyinstaller --noconsole --onedir --name "myapp_light" \
             --collect-all gi \
             --collect-all webview \
             --add-data "$TYPELIB_DIR:gi_typelibs" \
@@ -115,22 +107,19 @@ jobs:
             main.py
         shell: bash
 
-      # -------------------------------------------------------------
-      # PRIMARY PACKAGES: .deb and .rpm (via fpm)
-      # -------------------------------------------------------------
       - name: Package .deb and .rpm with fpm
         if: matrix.os == 'ubuntu-latest'
         run: |
-          # Setup staging layout for fpm
+          # Setup staging layout using light bundle
           mkdir -p staging/opt/myapp
           mkdir -p staging/usr/share/applications
 
-          cp -r dist/myapp/* staging/opt/myapp/
+          cp -r dist/myapp_light/* staging/opt/myapp/
           
           cat << 'EOF' > staging/usr/share/applications/myapp.desktop
           [Desktop Entry]
           Name=MyApp
-          Exec=/opt/myapp/myapp
+          Exec=/opt/myapp/myapp_light
           Type=Application
           Categories=Utility;
           Terminal=false
@@ -158,32 +147,37 @@ jobs:
         shell: bash
 
       # -------------------------------------------------------------
-      # BACKUP PLAN: AppImage
-      # (continue-on-error ensures .deb/.rpm aren't blocked if this fails)
+      # STEP 2: Build Self-Contained Qt Bundle (for AppImage)
       # -------------------------------------------------------------
-      - name: Build AppImage (Backup)
+      - name: Build Qt Self-Contained AppImage
         if: matrix.os == 'ubuntu-latest'
         continue-on-error: true
         env:
           APPIMAGE_EXTRACT_AND_RUN: 1
         run: |
-          # 1. Download appimagetool
+          # 1. Install PySide6 into environment specifically for AppImage build
+          pip install "pywebview[pyside6]" qtpy
+
+          # 2. Build PyInstaller bundle with QtWebEngine included (~130MB)
+          pyinstaller --noconsole --onedir --name "myapp_qt" --add-data "gui:gui" main.py
+
+          # 3. Download appimagetool
           wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage -O appimagetool
           chmod +x appimagetool
 
-          # 2. Create AppDir structure from PyInstaller dist output
+          # 4. Create AppDir structure using the Qt bundle
           mkdir -p AppDir/usr/bin
-          cp -r dist/myapp/* AppDir/usr/bin/
+          cp -r dist/myapp_qt/* AppDir/usr/bin/
 
-          # 3. Entrypoint script
+          # 5. Entrypoint script
           cat << 'EOF' > AppDir/AppRun
           #!/bin/sh
           HERE="$(dirname "$(readlink -f "${0}")")"
-          exec "$HERE/usr/bin/myapp" "$@"
+          exec "$HERE/usr/bin/myapp_qt" "$@"
           EOF
           chmod +x AppDir/AppRun
 
-          # 4. Desktop entry & icon
+          # 6. Desktop entry
           cat << 'EOF' > AppDir/myapp.desktop
           [Desktop Entry]
           Name=MyApp
@@ -195,10 +189,10 @@ jobs:
 
           touch AppDir/myapp.png
 
-          # 5. Build AppImage
+          # 7. Compile AppImage
           ARCH=x86_64 ./appimagetool AppDir MyApp-Linux.AppImage
         shell: bash
-          
+
       # Artifact Uploads
       - name: Upload Windows Artifact
         if: matrix.os == 'windows-latest'
