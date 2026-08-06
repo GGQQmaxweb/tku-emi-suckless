@@ -217,4 +217,3 @@ jobs:
           path: |
             *.deb
             *.rpm
-            *.AppImage
