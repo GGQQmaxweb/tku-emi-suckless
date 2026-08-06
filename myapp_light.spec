@@ -52,7 +52,18 @@ excluded_libs = {
     'libz.so',
     'libgdk-3.so',
     'libgtk-3.so',
-    'libgdk_pixbuf-2.0.so'
+    'libgdk_pixbuf-2.0.so',
+    # Additional low-level system dependencies to prevent symbol mismatches (e.g. MOUNT_2_40)
+    'libmount.so',
+    'libblkid.so',
+    'libuuid.so',
+    'libselinux.so',
+    'libffi.so',
+    'libpcre2-8.so',
+    'libpcre.so',
+    'libpixman-1.so',
+    'libdbus-1.so',
+    'libexpat.so'
 }
 
 a.binaries = [
