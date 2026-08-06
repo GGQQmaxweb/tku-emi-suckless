@@ -270,6 +270,7 @@ function renderMyClass(schedule, days, periods) {
     `;
 
     container.innerHTML = html;
+    document.getElementById('update-my-class-btn').innerText = "Update My Class"
 }
 
 function renderScheduleMyClass(schedule, days, periods) {
