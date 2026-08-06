@@ -32,7 +32,7 @@ jobs:
           cache: 'pip'
 
       # Linux system dependencies (GTK, Cairo, WebKit2Gtk)
-      - name: Install Linux Dependencies
+      - name: Install Linux System Dependencies
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
@@ -44,7 +44,8 @@ jobs:
             libcairo2-dev \
             pkg-config \
             python3-dev \
-            gir1.2-webkit2-4.1
+            gir1.2-webkit2-4.1 \
+            libfuse2t64 || sudo apt-get install -y libfuse2
         shell: bash
 
       # Install Python packages safely across OSes
@@ -73,17 +74,21 @@ jobs:
       # Linux AppImage Build
       - name: Build Linux PyInstaller & AppImage
         if: matrix.os == 'ubuntu-latest'
+        env:
+          APPIMAGE_EXTRACT_AND_RUN: 1
         run: |
+          # 1. Build directory bundle with PyInstaller
           pyinstaller --noconsole --onedir --name "MyApp" --add-data "gui:gui" main.py
-          
-          # Download appimagetool
+
+          # 2. Download appimagetool
           wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage -O appimagetool
           chmod +x appimagetool
 
-          # Construct AppDir structure
+          # 3. Create basic AppDir structure for AppImage
           mkdir -p AppDir/usr/bin
           cp -r dist/MyApp/* AppDir/usr/bin/
 
+          # Create AppRun entrypoint
           cat << 'EOF' > AppDir/AppRun
           #!/bin/sh
           HERE="$(dirname "$(readlink -f "${0}")")"
@@ -91,6 +96,7 @@ jobs:
           EOF
           chmod +x AppDir/AppRun
 
+          # Create desktop entry file
           cat << 'EOF' > AppDir/myapp.desktop
           [Desktop Entry]
           Name=MyApp
@@ -100,8 +106,10 @@ jobs:
           Categories=Utility;
           EOF
 
+          # Dummy icon (Required by appimagetool)
           touch AppDir/myapp.png
 
+          # 4. Compile AppImage (ARCH=x86_64 required in CI)
           ARCH=x86_64 ./appimagetool AppDir MyApp-Linux.AppImage
 
       # Artifact Uploads
