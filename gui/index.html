@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My Desktop App</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .page { display: none; }
+        .page.active { display: block; }
+    </style>
+</head>
+<body class="container" style="padding-top: 20px;">
+
+    <!-- LOADING SCREEN (Shown briefly while checking Python) -->
+    <section id="page-loading" class="page active">
+        <p>Loading app...</p>
+    </section>
+
+    <!-- LOGIN SCREEN -->
+    <section id="page-login" class="page">
+        <h1>TKU EMI Suckless</h1>
+        <h2>Login</h2>
+        <input type="text" id="username" placeholder="Username">
+        <input type="password" id="password" placeholder="Password">
+        <button id="loginbtn" onclick="handleLogin()">Sign In</button>
+        <p id="login-error" style="color: red;"></p>
+    </section>
+
+    <!-- MAIN DASHBOARD -->
+    <section id="page-dashboard" class="page">
+        <h2>Welcome back, <span id="user-display"></span>!</h2>
+        <div id="user-info">
+        </div>
+        <div>
+            <button onclick="showPage('required-courses'),updateRequiredCourses()">View Required Courses</button>
+            <button onclick="showPage('all-grades'),updateAllGrades()">View All Grades</button>
+            <button onclick="showPage('my-class-section'),updateMyClass()">View My Class</button>
+        </div>
+        
+            <div class="progress-container">
+            <div id="progress-bar" class="progress-bar">0%</div>
+        </div>
+        <div id="dashboard-content">
+            <p>Loading your data...</p>
+        </div>
+        <button onclick="handleLogout()" class="secondary">Logout</button>
+        <button id="UpdataUserdataBtn" onclick="updateUserLocalData()" class="primary">Update Data</button>
+    </section>
+
+    <!-- REQUIRED COURSES SECTION -->
+    <section id="required-courses" class="page">
+        <button onclick="showPage('page-dashboard')" class="secondary">Back to Dashboard</button>
+        <h2>Required Courses</h2>
+        <div id="required-courses-content">
+            <p>Loading required courses...</p>
+        </div>
+        <button id="update-required-courses-btn" onclick="updateRequiredCourses(true),document.getElementById('update-required-courses-btn').innerHTML = '<p>Loading required courses...</p>'" class="primary">Update Required Courses</button>
+    </section>
+
+    <section id="all-grades" class="page">
+        <button onclick="showPage('page-dashboard')" class="secondary">Back to Dashboard</button>
+        <h2>All Grades</h2>
+        <div id="all-grades-content">
+            <p>Loading all grades...</p>
+        </div>
+        <button id="update-all-grades-btn" onclick="updateAllGrades(true),document.getElementById('update-all-grades-btn').innerHTML = '<p>Loading all grades...</p>'" class="primary">Update All Grades</button>
+    </section>
+
+    <section id="my-class-section" class="page">
+        <button onclick="showPage('page-dashboard')" class="secondary">Back to Dashboard</button>
+        <h2>My Class</h2>
+        <button onclick="showPage('schedule-my-class'),updateScheduleMyClass()" class="primary">Schedule My Class</button>
+        <div id="my-class-content">
+            <p>Loading my class...</p>
+        </div>
+        <button id="update-my-class-btn" onclick="updateMyClass(true),document.getElementById('update-my-class-btn').innerHTML = '<p>Loading my class...</p>'" class="primary">Update My Class</button>
+    </section>
+
+    <section id="schedule-my-class" class="page">
+        <button onclick="showPage('my-class-section')" class="secondary">Back to My Class</button>
+        <h2>Schedule My Class</h2>
+        <div>
+            <button id="load-my-class-section-btn" onclick="updateScheduleMyClass({options:'load'}),document.getElementById('load-my-class-section-btn').innerHTML = '<p>Loading schedule my class...</p>'" class="primary">Load My Class</button>
+            <button id="clear-my-class-section-btn" onclick="updateScheduleMyClass({options:'clear'})">Clear My Class</button>
+            <button onclick="showPage('find-class')">Find Class</button>
+            <button onclick="exportScheduleClass()">Export</button>
+        </div>
+        <div id="export-schedule-my-class"></div>
+        <div id="schedule-my-class-content">
+            <p>Loading schedule my class...</p>
+        </div>
+        
+    </section>
+
+    <section id="find-class" class="page">
+
+        <button onclick="showPage('schedule-my-class')" class="secondary">
+        Back to Schedule
+        </button>
+
+        <h2>Find class</h2>
+        <div id="find-class-content">
+        <input id="search-title" placeholder="Course title">
+        <input id="search-time" placeholder="Time e.g. 二,7">
+        <select id="search-required" >
+            <option value="">Required / Elective</option>
+            <option value="必">必</option>
+            <option value="選">選</option>
+        </select>
+        <div class="dept-search">
+            <button id="set-my-dept" onclick="setMyDepartment()" class="small">
+                My Department
+            </button>
+            <input id="search-dept" placeholder="Department e.g. 資管">
+        </div>
+        <button onclick="searchButtonClick()">
+        Search
+        </button>
+            <div id="search-result"></div>
+        </div>
+        
+    </section>
+
+
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+beautifulsoup4
+requests
+pywebview
+pyinstaller
+pycairo; sys_platform == 'linux'
+PyGObject==3.48.2; sys_platform == 'linux'
