@@ -1,12 +1,31 @@
 import os
 import sys
 
-# Ensure PyInstaller runtime loads bundled GTK/WebKit typelibs
+# Ensure PyInstaller runtime loads bundled GTK/WebKit typelibs or system libraries
 if getattr(sys, 'frozen', False):
     bundle_dir = getattr(sys, '_MEIPASS', os.path.dirname(sys.executable))
     typelib_path = os.path.join(bundle_dir, 'gi_typelibs')
+    
+    paths = []
     if os.path.exists(typelib_path):
-        os.environ['GI_TYPELIB_PATH'] = typelib_path + os.pathsep + os.environ.get('GI_TYPELIB_PATH', '')
+        paths.append(typelib_path)
+    
+    # Common system typelib paths on different Linux distributions (e.g. Fedora, Debian/Ubuntu, Arch)
+    system_paths = [
+        "/usr/lib64/girepository-1.0",
+        "/usr/lib/girepository-1.0",
+        "/usr/lib/x86_64-linux-gnu/girepository-1.0",
+        "/usr/lib/i386-linux-gnu/girepository-1.0"
+    ]
+    for p in system_paths:
+        if os.path.exists(p) and p not in paths:
+            paths.append(p)
+            
+    existing = os.environ.get('GI_TYPELIB_PATH')
+    if existing:
+        paths.append(existing)
+        
+    os.environ['GI_TYPELIB_PATH'] = os.pathsep.join(paths)
 
 import platform
 import subprocess
