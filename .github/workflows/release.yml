@@ -1,9 +1,9 @@
-name: Build Desktop Apps
+name: Release Desktop Apps
 
 on:
   push:
-    branches: [ "main", "master" ,"dev-ci-workflow" ]
-  workflow_dispatch:
+    tags:
+      - 'v*'
 
 jobs:
   build:
@@ -214,3 +214,40 @@ jobs:
             *.deb
             *.rpm
             *.AppImage
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download Windows Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: Windows-exe
+          path: artifacts/Windows-exe
+
+      - name: Download macOS Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: macOS-app
+          path: artifacts/macOS-app
+
+      - name: Download Linux Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: Linux-Packages
+          path: artifacts/Linux-Packages
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/Windows-exe/*
+            artifacts/macOS-app/*
+            artifacts/Linux-Packages/*
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
