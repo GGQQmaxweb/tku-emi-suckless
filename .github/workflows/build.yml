@@ -131,7 +131,7 @@ jobs:
             --architecture x86_64 \
             --depends "python3-gobject" \
             --depends "gtk3" \
-            --depends "webkit2gtk3" \
+            --depends "webkit2gtk4.1" \
             -C staging .
           
       # Artifact Uploads
