@@ -2,7 +2,7 @@ name: Build Desktop Apps
 
 on:
   push:
-    branches: [ "main", "master" ,"dev-ci-workflow" ]
+    branches: [ "main", "master"]
   workflow_dispatch:
 
 jobs:
