@@ -97,12 +97,10 @@ jobs:
           pip install PyGObject pywebview pyinstaller pyinstaller-hooks-contrib
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
-          # Build GTK-based lightweight binary
           pyinstaller --noconsole --onedir --name "myapp_light" \
             --collect-all gi \
             --collect-all webview \
             --hidden-import "gi.repository.Gtk" \
-            --hidden-import "gi.repository.Gdk" \
             --hidden-import "gi.repository.WebKit2" \
             --add-data "gui:gui" \
             main.py
@@ -145,6 +143,7 @@ jobs:
             --depends "gtk3" \
             --depends "webkit2gtk4.1" \
             -C staging .
+
         shell: bash
 
       # -------------------------------------------------------------
