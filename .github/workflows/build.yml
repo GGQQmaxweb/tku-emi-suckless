@@ -22,24 +22,22 @@ jobs:
             asset_name: MyApp-Linux.AppImage
 
     steps:
-      # 1. Check out repository code
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # 2. Set up clean Python environment
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
 
-      # 2.1 Install Linux system dependencies early so packages like pycairo can build
-      - name: Install Linux System Dependencies
+      # Linux system dependencies (GTK, Cairo, WebKit2Gtk)
+      - name: Install Linux Dependencies
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            girepository-2.0 \
+            libgirepository1.0-dev \
             libglib2.0-dev \
             gobject-introspection \
             gcc \
@@ -49,49 +47,43 @@ jobs:
             gir1.2-webkit2-4.1
         shell: bash
 
-      # 3. Install dependencies
+      # Install Python packages safely across OSes
       - name: Install Python Dependencies
         run: |
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade pip setuptools wheel
           pip install pywebview pyinstaller
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          # Filter platform-specific packages or use fallback wheel flags
+          if [ -f requirements.txt ]; then 
+            pip install --only-binary=:all: -r requirements.txt || pip install -r requirements.txt
+          fi
         shell: bash
 
-      # -------------------------------------------------------------
-      # WINDOWS BUILD
-      # -------------------------------------------------------------
+      # Windows Build
       - name: Build Windows Executable (.exe)
         if: matrix.os == 'windows-latest'
         run: |
           pyinstaller --noconsole --onefile --name "MyApp-Windows" --add-data "gui;gui" main.py
 
-      # -------------------------------------------------------------
-      # MACOS BUILD (.app)
-      # -------------------------------------------------------------
+      # macOS Build
       - name: Build macOS Application (.app)
         if: matrix.os == 'macos-latest'
         run: |
           pyinstaller --noconsole --onedir --name "MyApp-macOS" --add-data "gui:gui" main.py
 
-      # -------------------------------------------------------------
-      # LINUX BUILD (AppImage)
-      # -------------------------------------------------------------
-
+      # Linux AppImage Build
       - name: Build Linux PyInstaller & AppImage
         if: matrix.os == 'ubuntu-latest'
         run: |
-          # 1. Build directory bundle with PyInstaller
           pyinstaller --noconsole --onedir --name "MyApp" --add-data "gui:gui" main.py
-
-          # 2. Download appimagetool
+          
+          # Download appimagetool
           wget https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage -O appimagetool
           chmod +x appimagetool
 
-          # 3. Create basic AppDir structure for AppImage
+          # Construct AppDir structure
           mkdir -p AppDir/usr/bin
           cp -r dist/MyApp/* AppDir/usr/bin/
 
-          # Create AppRun entrypoint
           cat << 'EOF' > AppDir/AppRun
           #!/bin/sh
           HERE="$(dirname "$(readlink -f "${0}")")"
@@ -99,7 +91,6 @@ jobs:
           EOF
           chmod +x AppDir/AppRun
 
-          # Create desktop entry file
           cat << 'EOF' > AppDir/myapp.desktop
           [Desktop Entry]
           Name=MyApp
@@ -109,15 +100,11 @@ jobs:
           Categories=Utility;
           EOF
 
-          # Dummy icon (Required by appimagetool)
           touch AppDir/myapp.png
 
-          # 4. Compile AppImage (ARCH=x86_64 required in CI)
           ARCH=x86_64 ./appimagetool AppDir MyApp-Linux.AppImage
 
-      # -------------------------------------------------------------
-      # UPLOAD ARTIFACTS
-      # -------------------------------------------------------------
+      # Artifact Uploads
       - name: Upload Windows Artifact
         if: matrix.os == 'windows-latest'
         uses: actions/upload-artifact@v4
@@ -125,14 +112,14 @@ jobs:
           name: ${{ matrix.artifact_name }}
           path: dist/MyApp-Windows.exe
 
-      - name: Upload macOS Artifact (.app bundle)
+      - name: Upload macOS Artifact
         if: matrix.os == 'macos-latest'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
           path: dist/MyApp-macOS.app
 
-      - name: Upload Linux Artifact (AppImage)
+      - name: Upload Linux Artifact
         if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@v4
         with:
