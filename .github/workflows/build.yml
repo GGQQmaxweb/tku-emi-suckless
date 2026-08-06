@@ -20,8 +20,10 @@ jobs:
             artifact_name: macOS-app
             asset_name: MyApp-macOS.app
           - os: ubuntu-latest
-            artifact_name: Linux-AppImage
-            asset_name: MyApp-Linux.AppImage
+            artifact_name: Linux-Packages
+            asset_name: |
+              *.deb
+              *.rpm
 
     steps:
       - name: Checkout Code
