@@ -323,6 +323,7 @@ function renderScheduleMyClass(schedule, days, periods) {
     `;
 
     container.innerHTML = html;
+    document.getElementById('update-my-class-btn').innerText = 'Update My Class'
 }
 
 async function searchClassTimeClick(time) {
