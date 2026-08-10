@@ -2,5 +2,5 @@ beautifulsoup4
 requests
 pywebview
 pyinstaller
-pycairo; sys_platform == 'linux'
-PyGObject==3.48.2; sys_platform == 'linux'
+# pycairo and PyGObject are provided by system packages on Linux
+# (python3-gi, python3-gi-cairo via apt) — do NOT install via pip

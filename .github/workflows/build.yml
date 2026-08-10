@@ -97,7 +97,9 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         run: |
           python -m pip install --upgrade pip setuptools wheel
-          pip install PyGObject pywebview pyinstaller pyinstaller-hooks-contrib
+          # PyGObject and pycairo are installed via apt (python3-gi, python3-gi-cairo)
+          # Installing them via pip would try to build from source and fail
+          pip install pywebview pyinstaller pyinstaller-hooks-contrib
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
 
           pyinstaller tku-emi-suckless_light.spec
