@@ -99,55 +99,139 @@ class UI_Api:
     
     def progress_on_graduation(self):
         """
-        it return a dict with percentage of graduation progress
+        Return overall graduation progress percentage.
         """
         data = self.get_score()
-        return {"total_percent": round(data["total_credit"]/data["required_total"]*100,2)}
-        
+
+        return {
+            "total_percent": round(
+                data["total_credit"] / data["total_required"] * 100,
+                2
+            )
+        }
 
     def get_score(self):
         department = self.student_info()["department"]
 
-        AllGrades  = self.all_years_course_grades()
+        AllGrades = self.all_years_course_grades()
         requiredCourses = self.required_courses_and_graduation_credits()
+
         if AllGrades is None or requiredCourses is None:
-            AllGrades  = self.all_years_course_grades(withUpdate=True)
+            AllGrades = self.all_years_course_grades(withUpdate=True)
             requiredCourses = self.required_courses_and_graduation_credits(withUpdate=True)
 
         courses = AllGrades["courses"]
+
+        # =========================
+        # 必修
+        # =========================
+        requiredScore = 0
+
+        for course in courses:
+            if (
+                course["status"] == "passed"
+                and course["requirement_type"] == "必修Required"
+            ):
+                requiredScore += course["credits_up"]
+
+        # =========================
+        # 本系選修
+        # =========================
         electiveScore = 0
 
         for course in courses:
-            if course["status"] == "passed" and course["requirement_type"] == "選修Elective" and department in course["specialization"]:
+            if (
+                course["status"] == "passed"
+                and course["requirement_type"] == "選修Elective"
+                and department in course["specialization"]
+            ):
                 electiveScore += course["credits_up"]
 
-        requiredScore = 0
-        for course in courses:
-            if course["status"] == "passed" and course["requirement_type"] == "必修Required":
-                requiredScore += course["credits_up"]
+        # =========================
+        # 其他選修
+        # =========================
+        otherElectiveScore = 0
 
-        score_pe_class = 0
         for course in courses:
-            if course["status"] == "passed" and "體育" in course["specialization"]: #體育不計入學分
+            if (
+                course["status"] == "passed"
+                and course["requirement_type"] == "選修Elective"
+                and department not in course["specialization"]
+            ):
+                otherElectiveScore += course["credits_up"]
+
+        # =========================
+        # 體育
+        # 體育有學分，但是不計入畢業學分
+        # =========================
+        score_pe_class = 0
+
+        for course in courses:
+            if (
+                course["status"] == "passed"
+                and "體育" in course["specialization"]
+            ):
                 score_pe_class += course["credits_up"]
 
-        
-
+        # =========================
+        # 畢業學分要求
+        # =========================
         credits = requiredCourses["credits"]
-        total_credit = credits["total"]
-        required = credits["required"]
-        elective_min = credits["elective_min"]
 
-        real_creadit = AllGrades["total_earned_credits"]-score_pe_class #看需求加入
+        total_credit = credits["total"]              # 128
+        required = credits["required"]               # 90
+        elective_min = credits["elective_min"]       # 18
 
-        return {"total_credit": real_creadit,
-                "required_credit": requiredScore,
-                "elective_credit": electiveScore,
-                "total_need": total_credit-real_creadit,
-                "required_need": required-requiredScore, 
-                "elective_need": elective_min-electiveScore,
-                "required_total": total_credit,
-                }
+        other_elective_min = total_credit - required - elective_min
+        # 128 - 90 - 18 = 20
+
+        # AllGrades 的總學分包含體育
+        # 體育不算畢業學分，所以扣掉
+        real_credit = (
+            AllGrades["total_earned_credits"]
+            - score_pe_class
+        )
+
+        return {
+            # =========================
+            # 已取得
+            # =========================
+            "total_credit": real_credit,
+            "required_credit": requiredScore,
+            "elective_credit": electiveScore,
+            "other_elective_credit": otherElectiveScore,
+
+            # =========================
+            # 尚缺
+            # =========================
+            "total_need": max(
+                0,
+                total_credit - real_credit
+            ),
+
+            "required_need": max(
+                0,
+                required - requiredScore
+            ),
+
+            "elective_need": max(
+                0,
+                elective_min - electiveScore
+            ),
+
+            "other_elective_need": max(
+                0,
+                other_elective_min - otherElectiveScore
+            ),
+
+            # =========================
+            # 畢業要求
+            # =========================
+            "total_required": total_credit,
+            "required_total": required,
+            "elective_total": elective_min,
+            "other_elective_total": other_elective_min,
+        }
     
     def update_all_user_data(self):
         self.student_info(withUpdate=True)
