@@ -301,28 +301,16 @@ class EMISStudentAPI:
         }
         return result
 
-    def get_missing_required_courses(self,debug=False):
-        """
-        Returns a list of required courses that have not been passed yet.
-        A course is treated as satisfied when either:
-        1. the exact same course code was passed, or
-        2. a passed course belongs to the same field group defined in Group_TableOfField.
-        """
-        # Just a exmaple code
-
+    def get_missing_required_courses(self, debug=False):
         all_grades = self.get_all_years_course_grades()['courses']
         required_courses = self.get_required_courses_and_graduation_credits()['courses']
-        
-
-        if debug:
-            print (f"All grades: {all_grades}")
-            print (f"Required courses: {required_courses}")
 
         def resolve_field_group(group_value):
             if not group_value:
                 return None
 
             group_value = str(group_value).strip()
+
             for field_name, field_codes in self.Group_TableOfField.items():
                 if (
                     group_value in field_codes
@@ -330,46 +318,124 @@ class EMISStudentAPI:
                     or group_value == field_name
                 ):
                     return field_name
+
             return None
+
+        def is_passed(course):
+            status = str(course.get("status", "")).lower()
+
+            if status in {"pass", "passed"}:
+                return True
+
+            try:
+                return int(course.get("grade")) >= 60
+            except (TypeError, ValueError):
+                return False
+
+        def is_pe_course(course):
+            return "體育" in str(course.get("course_name", ""))
+
+        # --------------------------------------------------
+        # Normal course matching
+        # --------------------------------------------------
 
         passed_courses = set()
         passed_field_groups = set()
 
+        # --------------------------------------------------
+        # PE calculation
+        # --------------------------------------------------
+
+        PE_REQUIRED_COURSE = "T9881"
+
+        pe_electives = []
+
         for c in all_grades:
-            status = str(c.get('status', '')).lower()
-            grade = c.get('grade')
-            is_pass = status in {"pass", "passed"}
-
-            if not is_pass:
-                try:
-                    if int(grade) >= 60:
-                        is_pass = True
-                except (TypeError, ValueError):
-                    pass
-
-            if is_pass:
-                course_code = c.get('course_code')
-                if course_code:
-                    passed_courses.add(course_code)
-
-                field_group = resolve_field_group(c.get('group'))
-                if field_group:
-                    passed_field_groups.add(field_group)
-
-        missing_courses = []
-        for c in required_courses:
-            course_code = c.get('course_code')
-            if course_code in passed_courses:
+            if not is_passed(c):
                 continue
 
-            required_group = resolve_field_group(c.get('group'))
-            if required_group and required_group in passed_field_groups:
+            course_code = c.get("course_code")
+
+            if course_code:
+                passed_courses.add(course_code)
+
+            field_group = resolve_field_group(c.get("group"))
+            if field_group:
+                passed_field_groups.add(field_group)
+
+            # 排除 T9881，因為它是大一體育必修，
+            # 不能拿它來當兩堂體育選修
+            if is_pe_course(c) and course_code != PE_REQUIRED_COURSE:
+                pe_electives.append(c)
+
+        # 至少兩堂體育選修
+        pe_elective_count = len(pe_electives)
+
+        pe_completed = (
+            PE_REQUIRED_COURSE in passed_courses
+            and pe_elective_count >= 2
+        )
+
+        if debug:
+            print("PE electives:", [
+                (
+                    c.get("course_code"),
+                    c.get("course_name"),
+                    c.get("credits_up"),
+                    c.get("credits_down"),
+                )
+                for c in pe_electives
+            ])
+            print("PE elective count:", pe_elective_count)
+            print("PE completed:", pe_completed)
+
+        # --------------------------------------------------
+        # Missing required courses
+        # --------------------------------------------------
+
+        missing_courses = []
+
+        for c in required_courses:
+            course_code = c.get("course_code")
+
+            # 體育 requirement 特殊處理
+            if is_pe_course(c):
+                if pe_completed:
+                    continue
+
+                # 如果體育還沒完成，不要把 T9812/T9912
+                # 各自當成獨立缺課
+                continue
+
+            # Exact course code
+            if course_code and course_code in passed_courses:
+                continue
+
+            # Field group
+            required_group = resolve_field_group(c.get("group"))
+
+            if (
+                required_group
+                and required_group in passed_field_groups
+            ):
                 continue
 
             missing_courses.append(c)
 
-        return missing_courses
+        # 如果體育未完成，只加入一個代表性的 requirement
+        if not pe_completed:
+            pe_required = next(
+                (
+                    c for c in required_courses
+                    if c.get("course_code") == PE_REQUIRED_COURSE
+                ),
+                None
+            )
 
+            if pe_required:
+                missing_courses.append(pe_required)
+
+        return missing_courses
 
     # 查詢各學期成績
     def get_semester_grades(self):
