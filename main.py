@@ -33,6 +33,7 @@ import webview
 import json
 from functools import wraps
 import re
+import urllib.request
 
 from emis_api.emis_api import EMISStudentAPI
 from emis_api.emis_auth_module import Authenticator
@@ -199,13 +200,20 @@ class UI_Api:
             "get_course_selection_by_course_code",
             withUpdate
         )
-    
+
     def courses_we_have_this_semester(self, withUpdate=False):
-        return self._data(
-            "courses.json",
-            "get_courses_we_have_this_semester",
-            withUpdate
-        )
+        if withUpdate:
+            url = "https://raw.githubusercontent.com/tkuitocc/azquerysucks/main/courses.json"
+            try:
+                with urllib.request.urlopen(url) as response:
+                    data = response.read().decode('utf-8')
+                    save_storage_data("courses.json",data=data)
+                    return json.loads(data)
+            except Exception as e:
+                print(f"Error fetching courses: {e}")
+                return {}
+        else:
+            return get_storage_data("courses.json")
 
     def schedule_my_class(self, schedule_data=None):
         """

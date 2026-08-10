@@ -497,9 +497,9 @@ def parse_grade_and_credits(raw_grade, credits):
     raw_grade = raw_grade.strip()
 
     if raw_grade == "通過":
-        return "pass", credits, credits, "pass"
+        return "pass", credits, credits, "passed"
     if raw_grade == "抵免":
-        return "pass", credits, credits, "pass"
+        return "pass", credits, credits, "passed"
     if raw_grade.startswith("*"):
         return int(raw_grade[1:]), 0, credits, "failed"
 
