@@ -22,7 +22,7 @@ A lightweight desktop client for Tamkang University (TKU) Educational Management
 ### Linux
 System GTK and WebKit packages are required:
 Just pick any `webkit2-4.x` you have in your distro. They're mostly inter-compatible.
-- **Ubuntu/Debian**: `sudo apt install python3-gi gir1.2-webkit2-4.0` (or `gir1.2-webkit2-4.1`) 
+- **Ubuntu/Debian**: `sudo apt install python3-gi gir1.2-webkit2-4.1` (or `gir1.2-webkit2-4.0` on older Ubuntu) 
 - **Fedora**: `sudo dnf install webkit2gtk3 python3-gobject`  
 - **Arch Linux**: `sudo pacman -S webkit2gtk`
 
