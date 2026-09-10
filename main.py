@@ -34,6 +34,8 @@ import json
 from functools import wraps
 import re
 import urllib.request
+import ssl
+import requests
 
 from emis_api.emis_api import EMISStudentAPI
 from emis_api.emis_auth_module import Authenticator
@@ -289,13 +291,38 @@ class UI_Api:
         if withUpdate:
             url = "https://raw.githubusercontent.com/tkuitocc/azquerysucks/main/courses.json"
             try:
-                with urllib.request.urlopen(url) as response:
-                    data = response.read().decode('utf-8')
-                    save_storage_data("courses.json",data=data)
-                    return json.loads(data)
+                courses_data = None
+                try:
+                    response = requests.get(url, timeout=15)
+                    response.raise_for_status()
+                    courses_data = response.json()
+                except (requests.exceptions.SSLError, requests.exceptions.ConnectionError):
+                    # Fallback without SSL verification if local certificates cannot be validated
+                    response = requests.get(url, verify=False, timeout=15)
+                    response.raise_for_status()
+                    courses_data = response.json()
+                except Exception:
+                    # Fallback to urllib with SSL context handling
+                    try:
+                        import certifi
+                        ctx = ssl.create_default_context(cafile=certifi.where())
+                    except Exception:
+                        ctx = ssl.create_default_context()
+                    try:
+                        with urllib.request.urlopen(url, context=ctx, timeout=15) as res:
+                            courses_data = json.loads(res.read().decode('utf-8'))
+                    except Exception:
+                        unverified_ctx = ssl._create_unverified_context()
+                        with urllib.request.urlopen(url, context=unverified_ctx, timeout=15) as res:
+                            courses_data = json.loads(res.read().decode('utf-8'))
+
+                if courses_data is not None:
+                    save_storage_data("courses.json", data=courses_data)
+                    return courses_data
+                return get_storage_data("courses.json") or {}
             except Exception as e:
                 print(f"Error fetching courses: {e}")
-                return {}
+                return get_storage_data("courses.json") or {}
         else:
             return get_storage_data("courses.json")
 
